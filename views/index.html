@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create User</title>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js" integrity="sha512-VJ6+sp2E5rFQk05caiXXzQd1wBABpjEj1r5kMiLmGAAgwPItw1YpqsCCBtq8Yr1x6C49/mTpRdXtq8O2RcZhlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+  <style>
+    body, html {
+      height: auto;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 1000px;
+    }
+
+    label {
+      margin-bottom: 5px;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 90%;
+    }
+
+    input[type="submit"], button {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      width: 90%;
+    }
+
+    input[type="submit"]:hover, button:hover {
+      background-color: #45a049;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* .user-data {
+  display: flex;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+} */
+
+    .popup {
+       position: fixed; 
+      top: 0;
+      left: -10;
+      transform: translateX(-50%);
+      background-color:red;
+      /* Green background */
+      color: white;
+      /* White text */
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      /* Ensure it's above other content */
+    }
+
+    #userData {
+      display: none;
+    }
+  </style>
+
+<title>Socket.IO Live User</title>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <form id="createUserForm">
+    <h1>Create New User</h1>
+
+    <label for="firstName">First Name:</label>
+    <input type="text" id="firstName" name="firstName" required pattern="[A-Za-z\s]+" title="Only alphabets are allowed">
+
+    <label for="lastName">Last Name:</label>
+    <input type="text" id="lastName" name="lastName" required pattern="[A-Za-z\s]+" title="Only alphabets are allowed">
+
+    <label for="mobileNo">Mobile Number:</label>
+    <input type="text" id="mobileNo" name="mobileNo" pattern="\d{10}" required title="Enter 10 digit mobile number">
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="street">Street:</label>
+    <input type="text" id="street" name="street" required>
+
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" required pattern="[A-Za-z\s]+" title="Only alphabets are allowed">
+
+    <label for="state">State:</label>
+    <input type="text" id="state" name="state" required pattern="[A-Za-z\s]+" title="Only alphabets are allowed">
+
+    <label for="country">Country:</label>
+    <input type="text" id="country" name="country" required pattern="[A-Za-z\s]+" title="Only alphabets are allowed">
+
+    <label for="loginId">Login ID:</label>
+    <input type="text" id="loginId" name="loginId" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <input type="submit" value="Save">
+    <button type="button" id="showData">Show Data</button>
+    <button type="button" id="joinRoom">Join Room</button>
+     </form>
+
+            <!-- SOCKET IO JOIN ROOM -->
+  <form id="userForm" style="display:none;">
+    <h2>Enter Registered Details</h2>
+    <input type="email" id="formEmail" placeholder="Email" required>
+    <button type="submit">Join</button>
+  </form>
+
+ 
+   <div id="userData" class="user-data"></div> 
+   <ol id="liveUsers"></ol>></ol>
+  <!-- <ul id="liveUsers"></ul> -->
+
+  
+</body>
+</html>
+
+ 
+
+
+         <!---------------------- USER CREATION ---------------------------->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#createUserForm').submit(function (event) {
+        event.preventDefault();
+
+        const formData = {
+          firstName: $('#firstName').val(),
+          lastName: $('#lastName').val(),
+          mobileNo: $('#mobileNo').val(),
+          email: $('#email').val(),
+          address: {
+            street: $('#street').val(),
+            city: $('#city').val(),
+            state: $('#state').val(),
+            country: $('#country').val()
+          },
+          loginId: $('#loginId').val(),
+          password: $('#password').val()
+        };
+
+        $.ajax({
+          type: 'POST',
+         url: 'http://localhost:4100/server/create',
+         // url: 'https://my-node-task.onrender.com/server/create',
+          contentType: 'application/json',
+          data: JSON.stringify(formData),
+          success: function (data) {
+            alert('User created successfully!');
+            $('#createUserForm')[0].reset();
+          },
+          error: function (error) {
+            alert('Error creating user:');
+          }
+        });
+      });
+
+      
+      $('#showData').on('click', function() {
+        $.ajax({
+           url: 'http://localhost:4100/server/fetchData',
+          //url: 'https://my-node-task.onrender.com/server/fetchData',
+          method: 'GET',
+          success: function(response) {
+            let table = '<h2>User Data</h2><table><tr><th>First Name</th><th>Last Name</th><th>Mobile No</th><th>Email</th><th>Street</th><th>City</th><th>State</th><th>Country</th><th>Login ID</th></tr>';
+            response.forEach(user => {
+              table += `<tr>
+                          <td>${user.firstName}</td>
+                          <td>${user.lastName}</td>
+                          <td>${user.mobileNo}</td>
+                          <td>${user.email}</td>
+                          <td>${user.address.street}</td>
+                          <td>${user.address.city}</td>
+                          <td>${user.address.state}</td>
+                          <td>${user.address.country}</td>
+                          <td>${user.loginId}</td>
+                        </tr>`;
+            });
+            table += '</table>';
+            $('.user-data').html(table).show();
+            $('#createUserForm').hide();
+          },
+          error: function(error) {
+            alert('Error fetching users');
+          }
+        });
+        
+
+      $('#showData').click(function () {
+        window.open('http://localhost:4100/server/fetchData', '_blank');
+      });
+    });
+
+
+     });
+
+                    // SOCKET.IO
+
+     $('#joinRoom').click(function () {
+    $('#createUserForm').hide();
+    $('#userForm').show();
+  });
+
+  const socket = io();
+
+  socket.on('update-live-users', function (liveUsers) {
+    const liveUsersList = $('#liveUsers');
+    liveUsersList.empty();
+    liveUsers.forEach(user => {
+      const li = $('<li>').text(`Name: ${user.firstName} ${user.lastName}, Email: ${user.email}, Socket ID: ${user.socketId}`);
+      li.data('userDetails', user);
+      liveUsersList.append(li);
+    });
+
+    // Add click event listener to each list item
+    $('#liveUsers li').on('click', function () {
+      const userDetails = $(this).data('userDetails');
+      showUserDetailsPopup(userDetails);
+    });
+  });
+
+
+  function showUserDetailsPopup(userDetails) {
+    const popupContent = `
+    <div class="user-details-popup">
+  <p><strong>First Name:</strong> ${userDetails.firstName}</p>
+  <p><strong>Last Name:</strong> ${userDetails.lastName}</p>
+  <p><strong>Email:</strong> ${userDetails.email}</p>
+  <p><strong>Mobile No:</strong> ${userDetails.mobileNo || 'N/A'}</p>
+  <div style="grid-column: span 2;">
+    <p><strong>Address:</strong></p>
+    <ul>
+      <li><strong>Street:</strong> ${userDetails.address.street || 'N/A'}</li>
+      <li><strong>City:</strong> ${userDetails.address.city || 'N/A'}</li>
+      <li><strong>State:</strong> ${userDetails.address.state || 'N/A'}</li>
+      <li><strong>Country:</strong> ${userDetails.address.country || 'N/A'}</li>
+    </ul>
+  </div>
+  <p><strong>Login ID:</strong> ${userDetails.loginId || 'N/A'}</p>
+  <button id="closePopup">Close</button>
+</div>
+  `;
+
+    // Append the popup to the body
+    const popup = $(popupContent);
+    $('body').append(popup);
+
+    // Add click event listener to the close button
+    $('#closePopup').on('click', function () {
+      popup.remove();
+    });
+  }
+
+  const style = `
+  <style>
+    .user-details-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: white;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    .user-details-popup p {
+      margin: 10px 0;
+    }
+    #closePopup {
+      margin-top: 20px;
+    }
+
+    .user-details-popup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.user-details-popup p {
+  margin: 5px 0;
+}
+
+.user-details-popup ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-details-popup ul li {
+  margin: 5px 0;
+}
+
+.user-details-popup button {
+  grid-column: span 2;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.user-details-popup button:hover {
+  background-color: #0056b3;
+}
+
+    
+  </style>
+`;
+
+  $('head').append(style);
+
+
+  $('#userForm').on('submit', function (e) {
+    e.preventDefault();
+    const email = $('#formEmail').val();
+    const socketId = socket.id;
+
+    $.ajax({
+      //url: 'https://node-task-m7sx.onrender.com/checkUser',
+      url: 'http://localhost:4100/checkUser',
+
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({ email, socketId }),
+      success: function (response) {
+        if (response.exists) {
+          const userData = response.user;
+          socket.emit('join-live-user', { email: userData.email, name: `${userData.firstName} ${userData.lastName}`, socketId });
+
+          // Hide the form and display user details
+          $('#userForm').hide();
+          // Listen for updated live users list
+          socket.on('updated-live-users', function (liveUsers) {
+            // Display details of all live users
+            $('#userData').html(`
+                  <h3>Live Users</h3>
+                  ${Object.values(liveUsers).map(user => `
+                  <p>Email: ${user.email}</p>
+                  <p>Name: ${user.firstName} ${user.lastName}</p>
+                <p>Socket ID: ${user.socketId}</p>
+              `).join('')}
+            `).show();
+          });
+          // Display popup
+          displayPopup(userData.firstName,userData.lastName);
+
+        } else {
+          alert('MAIL does not exist. Firstly register then join room');
+        }
+      },
+      error: function (err) {
+        console.error('Error:', err);
+      }
+    });
+  })
+  // Function to display the popup
+  function displayPopup(firstName,lastName) {
+    const popup = $('<div class="popup">JOINED ' + firstName+' '+ lastName + '</div>');
+    $('body').append(popup);
+
+    // Remove the popup after 3 seconds
+    setTimeout(() => {
+      popup.remove();
+    }, 3000);
+  }
+
+  socket.on('user-disconnected', function (socketId) {
+    $(`#liveUsers li:contains('${socketId}')`).remove();
+  });
+
+  </script>
+</body>
+
+</html>
+
